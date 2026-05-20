@@ -10,7 +10,7 @@ from io import BytesIO
 # API KEY
 # =====================================================
 
-UNSPLASH_ACCESS_KEY = "4Xup6SFwh0QWOi9d8ChrLMQ9tLMGItpufkRxepDK4EQ"
+UNSPLASH_ACCESS_KEY = st.secrets["UNSPLASH_ACCESS_KEY"]
 
 # =====================================================
 # CONFIG PAGE
