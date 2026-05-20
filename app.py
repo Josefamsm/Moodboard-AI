@@ -22,7 +22,7 @@ st.set_page_config(
 )
 
 # =====================================================
-# CSS SIMPLE
+# CSS
 # =====================================================
 
 st.markdown("""
@@ -46,7 +46,6 @@ h1, h2, h3, p, label {
 
 .stButton > button:hover {
     background-color: #e9e9e9;
-
 }
 
 </style>
@@ -69,26 +68,14 @@ prompt = st.text_input(
 )
 
 # =====================================================
-# SEARCH IMAGES
+# SEARCH IMAGES (FIXED)
 # =====================================================
 
 def buscar_imagenes(query, cantidad=4):
 
     try:
 
-        palabras = query.lower().split()
-
-        keywords_validas = [
-            palabra
-            for palabra in palabras
-            if len(palabra) > 3
-        ]
-
-        query_final = " ".join(
-            keywords_validas[:2]
-        )
-
-        st.write("🔎 Búsqueda usada:", query_final)
+        st.write("🔎 QUERY:", query)
 
         url = "https://api.unsplash.com/search/photos"
 
@@ -96,40 +83,34 @@ def buscar_imagenes(query, cantidad=4):
             "Authorization": f"Client-ID {UNSPLASH_ACCESS_KEY}"
         }
 
-        params = {
-            "query": query_final,
-            "per_page": cantidad,
-            "orientation": "portrait"
-        }
-
         response = requests.get(
             url,
             headers=headers,
-            params=params
+            params={
+                "query": query,
+                "per_page": cantidad
+            }
         )
 
         data = response.json()
 
+        st.write("STATUS:", response.status_code)
+        st.write("RAW RESPONSE:", data)
+
         imagenes = []
 
-        if "results" in data:
+        for item in data.get("results", []):
 
-            for item in data["results"]:
+            url_img = item.get("urls", {}).get("regular")
 
-                if "urls" in item:
-
-                    imagenes.append(
-                        item["urls"]["regular"]
-                    )
+            if url_img:
+                imagenes.append(url_img)
 
         return imagenes
 
     except Exception as e:
 
-        st.error(
-            f"Error buscando imágenes: {e}"
-        )
-
+        st.error(f"Error buscando imágenes: {e}")
         return []
 
 # =====================================================
@@ -142,14 +123,9 @@ def extraer_colores(url_imagen):
 
         response = requests.get(url_imagen)
 
-        img = Image.open(
-            BytesIO(response.content)
-        ).convert("RGB")
+        img = Image.open(BytesIO(response.content)).convert("RGB")
 
-        colores = colorgram.extract(
-            img,
-            5
-        )
+        colores = colorgram.extract(img, 5)
 
         resultado = []
 
@@ -157,11 +133,7 @@ def extraer_colores(url_imagen):
 
             rgb = color.rgb
 
-            hex_color = '#%02x%02x%02x' % (
-                rgb.r,
-                rgb.g,
-                rgb.b
-            )
+            hex_color = '#%02x%02x%02x' % (rgb.r, rgb.g, rgb.b)
 
             resultado.append(hex_color)
 
@@ -169,91 +141,34 @@ def extraer_colores(url_imagen):
 
     except Exception as e:
 
-        st.error(
-            f"Error extrayendo colores: {e}"
-        )
-
+        st.error(f"Error extrayendo colores: {e}")
         return []
 
 # =====================================================
-# GENERAR TEXTOS
+# TEXTOS
 # =====================================================
 
 def generar_textos(prompt):
 
-    adjetivos = [
-        "Cinematic",
-        "Nordic",
-        "Cozy",
-        "Editorial",
-        "Minimal",
-        "Dreamy",
-        "Moody",
-        "Luxury",
-        "Creative",
-        "Modern"
-    ]
-
-    sustantivos = [
-        "Escape",
-        "Studio",
-        "Retreat",
-        "Workspace",
-        "Atmosphere",
-        "Vision",
-        "Mood",
-        "Aesthetic"
-    ]
+    adjetivos = ["Cinematic","Nordic","Cozy","Editorial","Minimal","Dreamy","Moody","Luxury","Creative","Modern"]
+    sustantivos = ["Escape","Studio","Retreat","Workspace","Atmosphere","Vision","Mood","Aesthetic"]
 
     keywords_base = [
-        "soft lighting",
-        "neutral tones",
-        "editorial",
-        "cinematic",
-        "warm shadows",
-        "minimal",
-        "modern",
-        "cozy",
-        "textured",
-        "atmospheric",
-        "luxury",
-        "visual storytelling"
+        "soft lighting","neutral tones","editorial","cinematic",
+        "warm shadows","minimal","modern","cozy","textured",
+        "atmospheric","luxury","visual storytelling"
     ]
 
-    fuentes = [
-        "Inter",
-        "Poppins",
-        "Playfair Display",
-        "Montserrat",
-        "Cormorant",
-        "Space Grotesk",
-        "Lora",
-        "DM Sans"
-    ]
+    fuentes = ["Inter","Poppins","Playfair Display","Montserrat","Cormorant","Space Grotesk","Lora","DM Sans"]
 
-    titulo = (
-        random.choice(adjetivos)
-        + " "
-        + random.choice(sustantivos)
-    )
+    titulo = random.choice(adjetivos) + " " + random.choice(sustantivos)
 
-    descripcion = (
-        f"A visual atmosphere inspired by {prompt}, "
-        f"combining aesthetic composition, texture "
-        f"and emotional visual storytelling."
-    )
+    descripcion = f"A visual atmosphere inspired by {prompt}, combining aesthetic composition and emotional storytelling."
 
-    keywords = random.sample(
-        keywords_base,
-        5
-    )
+    keywords = random.sample(keywords_base, 5)
+    fonts = random.sample(fuentes, 2)
 
-    fonts = random.sample(
-        fuentes,
-        2
-    )
-
-    texto_final = f"""
+    return f"""
 # {titulo}
 
 ### Description
@@ -266,10 +181,8 @@ def generar_textos(prompt):
 {fonts[0]} + {fonts[1]}
 """
 
-    return texto_final
-
 # =====================================================
-# BOTON PRINCIPAL
+# BUTTON
 # =====================================================
 
 if st.button("Generar Moodboard"):
@@ -278,33 +191,16 @@ if st.button("Generar Moodboard"):
 
         with st.spinner("Creando moodboard..."):
 
-            # =====================================
-            # GENERAR TEXTOS
-            # =====================================
-
             textos = generar_textos(prompt)
-
             st.markdown(textos)
-
-            # =====================================
-            # BUSCAR IMAGENES
-            # =====================================
 
             imagenes = buscar_imagenes(prompt)
 
-            st.write(
-                f"🖼️ Imágenes encontradas: {len(imagenes)}"
-            )
-
-            # =====================================
-            # VALIDAR
-            # =====================================
+            st.write(f"🖼️ Imágenes encontradas: {len(imagenes)}")
 
             if len(imagenes) == 0:
 
-                st.warning(
-                    "No se encontraron imágenes."
-                )
+                st.warning("No se encontraron imágenes.")
 
             else:
 
@@ -312,38 +208,19 @@ if st.button("Generar Moodboard"):
 
                 cols = st.columns(2)
 
-                # =================================
-                # MOSTRAR IMAGENES
-                # =================================
-
                 for i, img_url in enumerate(imagenes):
 
                     with cols[i % 2]:
 
-                        # =========================
-                        # IMAGEN
-                        # =========================
+                        st.image(img_url, use_container_width=True)
 
-                        st.image(
-                            img_url,
-                            use_container_width=True
-                        )
-
-                        # =========================
-                        # PALETA
-                        # =========================
-
-                        colores = extraer_colores(
-                            img_url
-                        )
+                        colores = extraer_colores(img_url)
 
                         if colores:
 
                             st.write("🎨 Paleta")
 
-                            palette_cols = st.columns(
-                                len(colores)
-                            )
+                            palette_cols = st.columns(len(colores))
 
                             for idx, color in enumerate(colores):
 
@@ -355,15 +232,8 @@ if st.button("Generar Moodboard"):
                                         background-color:{color};
                                         border-radius:12px;
                                         border:1px solid #ddd;
-                                        margin-bottom:5px;
-                                    ">
-                                    </div>
-
-                                    <p style="
-                                        font-size:11px;
-                                        text-align:center;
-                                        color:black;
-                                    ">
+                                    "></div>
+                                    <p style="font-size:11px;text-align:center;">
                                         {color}
                                     </p>
                                     """,
@@ -372,6 +242,4 @@ if st.button("Generar Moodboard"):
 
     else:
 
-        st.warning(
-            "Escribe una descripción primero."
-        )
+        st.warning("Escribe una descripción primero.")
